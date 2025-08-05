@@ -1,0 +1,399 @@
+import React, { useState, useEffect } from 'react';
+import { Heart, X, SkipForward, BookOpen, Sun, Moon, Filter, Copy, Download } from 'lucide-react';
+
+const CouplesQuestionApp = () => {
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [likedQuestions, setLikedQuestions] = useState([]);
+  const [dislikedQuestions, setDislikedQuestions] = useState([]);
+  const [askedQuestions, setAskedQuestions] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [darkMode, setDarkMode] = useState(false);
+  const [showLikedQuestions, setShowLikedQuestions] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Question generation templates by category
+  const questionTemplates = {
+    Deep: [
+      "What's something about yourself that you've discovered since we've been together?",
+      "What childhood experience shaped who you are today?",
+      "What does success mean to you right now in your life?",
+      "What's a belief you held strongly that has changed over time?",
+      "What's the most important lesson your parents taught you?",
+      "What fear would you like to overcome together?",
+      "What makes you feel most understood by me?",
+      "What's a core value that guides your decisions?",
+      "What's something you're grateful for that happened this year?",
+      "What's a quality you admire in me that you'd like to develop in yourself?",
+      "What does 'home' mean to you beyond just a place?",
+      "What's a tradition from your family you'd like us to continue?",
+      "What's something you've never told anyone but would tell me?",
+      "What's a goal you have that I could help support you with?",
+      "What's the hardest decision you've had to make recently?"
+    ],
+    
+    Silly: [
+      "If you could only communicate through movie quotes for a day, which movie would you choose?",
+      "What's the most ridiculous conspiracy theory you could come up with about our relationship?",
+      "If our pets could talk, what would they say about us?",
+      "What superpower would be completely useless but hilarious to have?",
+      "If you had to create a reality TV show about our daily life, what would it be called?",
+      "What's the weirdest talent you wish you had?",
+      "If we were characters in a sitcom, what would our catchphrases be?",
+      "What's the most absurd thing you believed as a child?",
+      "If you could replace all the grass in the world with something else, what would it be?",
+      "What's the strangest thing you've ever googled at 3 AM?",
+      "If we had to survive a zombie apocalypse with only items from our kitchen, what's our strategy?",
+      "What's the most ridiculous fashion trend you secretly want to try?",
+      "If animals could give Yelp reviews of humans, what would yours say?",
+      "What's the weirdest combination of two hobbies that would make an interesting new sport?",
+      "If we could only eat foods that start with the first letter of our names for a week, how would we survive?"
+    ],
+    
+    Romantic: [
+      "What's your favorite memory of us from this past month?",
+      "What small thing do I do that makes you feel most loved?",
+      "What's your ideal way for us to spend a surprise day off together?",
+      "What song makes you think of me every time you hear it?",
+      "What's something about our future that you're most excited about?",
+      "What's the sweetest thing I've ever done for you?",
+      "How do you like to be comforted when you're having a tough day?",
+      "What's your favorite thing about the way we communicate?",
+      "What adventure would you love for us to go on together?",
+      "What's something new you'd like us to try as a couple?",
+      "What makes you feel most connected to me?",
+      "What's your favorite way we show affection to each other?",
+      "What's a romantic gesture that would surprise you?",
+      "What's something about me that still gives you butterflies?",
+      "What's your favorite thing about our relationship that others might not see?"
+    ],
+    
+    Hypothetical: [
+      "If we could live in any fictional universe together, where would we choose?",
+      "If we won the lottery tomorrow, what's the first thing we'd do together?",
+      "If we could have dinner with any couple from history, who would it be?",
+      "If we could master any skill together instantly, what would it be?",
+      "If we had to live in a different time period, when would you choose?",
+      "If we could teleport anywhere right now for a perfect date, where would we go?",
+      "If we could add one room to our house, what would it be and how would we use it?",
+      "If we could solve one world problem together, what would it be?",
+      "If we had to live in a different country for a year, where would you want to go?",
+      "If we could have any animal as a pet (that was safe and legal), what would you choose?",
+      "If we could time travel to witness any historical event together, what would it be?",
+      "If we had to give up technology for a month, how would we spend our time?",
+      "If we could have superpowers, what would yours be and how would we use them together?",
+      "If we could design our perfect retirement together, what would it look like?",
+      "If we could start a business together, what would it be?"
+    ],
+    
+    "Everyday Life": [
+      "What's something that made you smile today?",
+      "What's your current favorite way to relax after work?",
+      "What's a new habit you'd like to start together?",
+      "What's your favorite thing about our current daily routine?",
+      "What's something you've been curious about lately?",
+      "What's a skill you'd love to get better at this year?",
+      "What's your favorite way we spend time together on weekends?",
+      "What's something you've been wanting to organize or change in our home?",
+      "What's a small luxury that makes your day better?",
+      "What's something you'd like us to do more often together?",
+      "What's your favorite meal we cook together?",
+      "What's something you appreciate that I do regularly?",
+      "What's a hobby or activity you'd like to explore?",
+      "What's your favorite thing about our current season of life?",
+      "What's something simple that brings you joy?"
+    ]
+  };
+
+  // Generate a random question for the selected category
+  const generateQuestion = (category) => {
+    const templates = category === 'All' 
+      ? Object.values(questionTemplates).flat()
+      : questionTemplates[category] || questionTemplates.Deep;
+    
+    const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+    
+    return {
+      id: Date.now() + Math.random(), // Unique ID
+      text: randomTemplate,
+      category: category === 'All' ? getRandomCategory() : category,
+      tone: category
+    };
+  };
+
+  const getRandomCategory = () => {
+    const cats = ['Deep', 'Silly', 'Romantic', 'Hypothetical', 'Everyday Life'];
+    return cats[Math.floor(Math.random() * cats.length)];
+  };
+
+  const categories = ['All', 'Deep', 'Silly', 'Romantic', 'Hypothetical', 'Everyday Life'];
+
+  // Load saved data on component mount
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('couplesAppData') || '{}');
+    if (saved.likedQuestions) setLikedQuestions(saved.likedQuestions);
+    if (saved.dislikedQuestions) setDislikedQuestions(saved.dislikedQuestions);
+    if (saved.askedQuestions) setAskedQuestions(saved.askedQuestions);
+    if (saved.darkMode !== undefined) setDarkMode(saved.darkMode);
+  }, []);
+
+  // Save data whenever state changes
+  useEffect(() => {
+    const dataToSave = {
+      likedQuestions,
+      dislikedQuestions,
+      askedQuestions,
+      darkMode
+    };
+    localStorage.setItem('couplesAppData', JSON.stringify(dataToSave));
+  }, [likedQuestions, dislikedQuestions, askedQuestions, darkMode]);
+
+  // Get next question - now generates instead of filtering from database
+  const getNextQuestion = () => {
+    return generateQuestion(selectedCategory);
+  };
+
+  // Initialize with first question
+  useEffect(() => {
+    if (!currentQuestion) {
+      setCurrentQuestion(getNextQuestion());
+    }
+  }, [selectedCategory]);
+
+  const handleLike = () => {
+    if (currentQuestion && !likedQuestions.find(q => q.id === currentQuestion.id)) {
+      setLikedQuestions([...likedQuestions, currentQuestion]);
+    }
+    handleNext();
+  };
+
+  const handleDislike = () => {
+    if (currentQuestion) {
+      setDislikedQuestions([...dislikedQuestions, currentQuestion.id]);
+    }
+    handleNext();
+  };
+
+  const handleNext = () => {
+    if (currentQuestion) {
+      setAskedQuestions([...askedQuestions, currentQuestion.id]);
+    }
+    setCurrentQuestion(getNextQuestion());
+  };
+
+  const copyLikedQuestions = () => {
+    const text = likedQuestions.map((q, i) => `${i + 1}. ${q.text}`).join('\n\n');
+    navigator.clipboard.writeText(text);
+  };
+
+  const exportLikedQuestions = () => {
+    const text = likedQuestions.map((q, i) => `${i + 1}. ${q.text} (${q.category})`).join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'liked-questions.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const themeClasses = darkMode 
+    ? 'bg-gray-900 text-white' 
+    : 'bg-gradient-to-br from-pink-50 to-purple-50 text-gray-800';
+
+  if (showLikedQuestions) {
+    return (
+      <div className={`min-h-screen p-4 transition-colors duration-300 ${themeClasses}`}>
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setShowLikedQuestions(false)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              ← Back to Questions
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={copyLikedQuestions}
+                className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                title="Copy to clipboard"
+              >
+                <Copy size={20} />
+              </button>
+              <button
+                onClick={exportLikedQuestions}
+                className="p-2 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors"
+                title="Download as text"
+              >
+                <Download size={20} />
+              </button>
+            </div>
+          </div>
+          
+          <h2 className="text-2xl font-bold mb-6 text-center">Your Liked Questions ({likedQuestions.length})</h2>
+          
+          {likedQuestions.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No liked questions yet!</p>
+              <p className="text-gray-400 mt-2">Start exploring questions and heart the ones you love.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {likedQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className={`p-6 rounded-xl shadow-lg transition-all duration-300 ${
+                    darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-pink-100'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-sm font-medium px-3 py-1 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300">
+                      {question.category}
+                    </span>
+                    <span className="text-sm text-gray-500">#{index + 1}</span>
+                  </div>
+                  <p className="text-lg leading-relaxed">{question.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen p-4 transition-colors duration-300 ${themeClasses}`}>
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+            Get to Know Your Spouse
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            Meaningful questions to deepen your connection
+          </p>
+        </div>
+
+        {/* Top Controls */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          {/* Category Filter */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+              } shadow-md`}
+            >
+              <Filter size={18} />
+              {selectedCategory}
+            </button>
+            
+            {showFilters && (
+              <div className={`absolute z-10 mt-12 py-2 rounded-lg shadow-lg ${
+                darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
+                {categories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      setShowFilters(false);
+                      setCurrentQuestion(null);
+                    }}
+                    className={`block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      selectedCategory === category ? 'bg-pink-50 text-pink-600 dark:bg-pink-900 dark:text-pink-300' : ''
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowLikedQuestions(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+              } shadow-md`}
+            >
+              <BookOpen size={18} />
+              <span className="hidden sm:inline">Liked</span>
+              <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                {likedQuestions.length}
+              </span>
+            </button>
+            
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg transition-colors ${
+                darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+              } shadow-md`}
+            >
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Question Card */}
+        {currentQuestion && (
+          <div className={`relative p-8 rounded-2xl shadow-xl transition-all duration-500 transform hover:scale-[1.02] ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-pink-100'
+          }`}>
+            <div className="absolute top-4 right-4">
+              <span className="text-xs font-medium px-3 py-1 rounded-full bg-gradient-to-r from-pink-100 to-purple-100 text-pink-700 dark:from-pink-900 dark:to-purple-900 dark:text-pink-300">
+                {currentQuestion.category}
+              </span>
+            </div>
+            
+            <div className="pt-4">
+              <p className="text-xl leading-relaxed text-center mb-8 font-medium">
+                {currentQuestion.text}
+              </p>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handleDislike}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-200 transform hover:scale-105"
+                >
+                  <X size={20} />
+                  <span className="hidden sm:inline">Skip</span>
+                </button>
+                
+                <button
+                  onClick={handleNext}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200 transform hover:scale-105"
+                >
+                  <SkipForward size={20} />
+                  <span className="hidden sm:inline">Next</span>
+                </button>
+                
+                <button
+                  onClick={handleLike}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white transition-all duration-200 transform hover:scale-105"
+                >
+                  <Heart size={20} />
+                  <span className="hidden sm:inline">Love It</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="mt-8 text-center">
+          <div className="flex justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <div>Questions Asked: {askedQuestions.length}</div>
+            <div>Liked: {likedQuestions.length}</div>
+            <div>Category: {selectedCategory}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CouplesQuestionApp;
